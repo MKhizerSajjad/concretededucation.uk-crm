@@ -56,7 +56,7 @@
                                     <div class="col-sm-6">
                                         <div class="mb-3">
                                             <label for="duration">Course Duration <span class="font-size-10">(In Year)</span> <span class="text text-danger"> *</span></label>
-                                            <input id="duration" name="duration" type="text" class="form-control @error('name') is-invalid @enderror" placeholder="Course Duration <span>" value="{{ old('name') }}">
+                                            <input id="duration" name="duration" type="text" class="form-control @error('name') is-invalid @enderror" placeholder="Course Duration" value="{{ old('name') }}">
                                             @error('duration')
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong>{{ $message }}</strong>
