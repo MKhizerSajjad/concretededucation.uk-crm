@@ -74,23 +74,25 @@
                                             @enderror
                                         </div>
                                     </div>
-                                    <div class="col-sm-6">
-                                        <div class="mb-3">
-                                            <label for="time">Team Leader <span class="text text-danger font-size-11"> (Select For Team Members Only)</span></label>
-                                            <select id="team_leader" name="team_leader" class="select2 form-control @error('team_leader') is-invalid @enderror">
-                                                <option value="">Select Team Leader </option>
-                                                @foreach ($teamLeaders as $key => $teamLeader)
-                                                    <option value="{{  $teamLeader->id }}" {{ old('team_leader') == $teamLeader->id ? 'selected' : '' }}>{{ $teamLeader->first_name . ' ' . $teamLeader->last_name }}</option>
-                                                @endforeach
-                                            </select>
-                                            @error('team_leader')
-                                                <span class="invalid-feedback" role="alert">
-                                                    <strong>{{ $message }}</strong>
-                                                </span>
-                                            @enderror
+                                    @if (Auth::user()->user_type == 1)
+                                        <div class="col-sm-6">
+                                            <div class="mb-3">
+                                                <label for="time">Team Leader <span class="text text-danger font-size-11"> (Select For Team Members Only)</span></label>
+                                                <select id="team_leader" name="team_leader" class="select2 form-control @error('team_leader') is-invalid @enderror">
+                                                    <option value="">Select Team Leader </option>
+                                                    @foreach ($teamLeaders as $key => $teamLeader)
+                                                        <option value="{{  $teamLeader->id }}" {{ old('team_leader') == $teamLeader->id ? 'selected' : '' }}>{{ $teamLeader->first_name . ' ' . $teamLeader->last_name }}</option>
+                                                    @endforeach
+                                                </select>
+                                                @error('team_leader')
+                                                    <span class="invalid-feedback" role="alert">
+                                                        <strong>{{ $message }}</strong>
+                                                    </span>
+                                                @enderror
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-sm-6">
+                                    @endif
+                                    <div class="col-sm-{{ Auth::user()->user_type == 1 ? '6' : '12' }}">
                                         <div class="mb-3">
                                             <label for="time">Status <span class="text text-danger"> *</span></label>
                                             <select id="user_status" name="status" class="select2 form-control @error('status') is-invalid @enderror">

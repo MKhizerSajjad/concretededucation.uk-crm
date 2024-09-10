@@ -39,19 +39,21 @@
                         <span key="t-dashboard">Dashboard</span>
                     </a>
                 </li>
-                <li>
-                    <a href="{{ route('university.index') }}" class="waves-effect">
-                        <i class="bx bx-buildings"></i>
-                        <span key="t-universties">Universties</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ route('course.index') }}" class="waves-effect">
-                        <i class="bx bx-book"></i>
-                        <span key="t-courses">Courses</span>
-                    </a>
-                </li>
-                @if (in_array(auth()->user()->user_type , [1]))
+                @if (in_array(auth()->user()->user_type, [1]))
+                    <li>
+                        <a href="{{ route('university.index') }}" class="waves-effect">
+                            <i class="bx bx-buildings"></i>
+                            <span key="t-universties">Universties</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('course.index') }}" class="waves-effect">
+                            <i class="bx bx-book"></i>
+                            <span key="t-courses">Courses</span>
+                        </a>
+                    </li>
+                @endif
+                @if (in_array(auth()->user()->user_type, [1, 2]))
                     <li>
                         <a href="{{ route('agent.index') }}" class="waves-effect">
                             <i class="bx bx-user-circle"></i>
@@ -65,7 +67,7 @@
                         <span key="t-avail-course">University Courses</span>
                     </a>
                     <ul class="sub-menu" aria-expanded="false">
-                        <li><a href="{{ route('university-courses.index') }}" key="t-filters">Filters   </a></li>
+                        <li><a href="{{ route('university-courses.index') }}" key="t-filters">Filters</a></li>
                         <li><a href="{{ route('university-courses.list') }}" key="t-courses">Courses</a></li>
                         <li><a href="{{ route('university-courses.count') }}" key="t-universities">Universities</a></li>
                         {{-- <li><a href="{{ route('intake-course.index') }}" key="t-product-detail">Courses</a></li> --}}

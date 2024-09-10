@@ -22,17 +22,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
     Route::resource('university', UniversityController::class)->names('university');
-    Route::resource('course', CourseController::class)->names('course');
+    Route::resource('course', CourseController::class)->names('course')->middleware('accessLevel:1');
     Route::resource('intake', IntakeController::class)->names('intake');
-    Route::resource('agent', AgentController::class)->names('agent');
+    Route::resource('agent', AgentController::class)->names('agent')->middleware('accessLevel:1,2');
     // Route::resource('university-courses', UniversityCourseController::class)->names('university-courses');
 
     Route::prefix('university-courses')->group(function () {
         Route::get('/', [UniversityCourseController::class, 'index'])->name('university-courses.index');
         Route::get('/count', [UniversityCourseController::class, 'count'])->name('university-courses.count');
         Route::get('list', [UniversityCourseController::class, 'list'])->name('university-courses.list');
-        Route::get('create', [UniversityCourseController::class, 'create'])->name('university-courses.create');
-        Route::post('store', [UniversityCourseController::class, 'store'])->name('university-courses.store');
+        Route::get('create', [UniversityCourseController::class, 'create'])->name('university-courses.create')->middleware('accessLevel:1');
+        Route::post('store', [UniversityCourseController::class, 'store'])->name('university-courses.store')->middleware('accessLevel:1');
         Route::get('{course}', [UniversityCourseController::class, 'show'])->name('university-courses.show');
         Route::get('{course}/detail', [UniversityCourseController::class, 'detail'])->name('university-courses.detail');
     });

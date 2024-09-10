@@ -34,9 +34,11 @@
                     <div class="card">
                         <div class="card-body">
                             <h4 class="card-title">University Courses List</h4>
-                            <div class="d-flex justify-content-end gap-2" bis_skin_checked="1">
-                                <a href="{{ route('university-courses.create') }}" class="btn btn-primary waves-effect waves-light"> <i class="bx bx-plus me-1"></i> Assign Course</a>
-                            </div>
+                            @if (Auth::user()->user_type == 1)
+                                <div class="d-flex justify-content-end gap-2" bis_skin_checked="1">
+                                    <a href="{{ route('university-courses.create') }}" class="btn btn-primary waves-effect waves-light"> <i class="bx bx-plus me-1"></i> Assign Course</a>
+                                </div>
+                            @endif
                             {{-- <div class="card-title-desc card-subtitle" bis_skin_checked="1">Create responsive tables by wrapping any <code>.table</code> in <code>.table-responsive</code>to make them scroll horizontally on small devices (under 768px).</div> --}}
                             @if (count($data) > 0)
                                 <div class="table-responsive" bis_skin_checked="1">

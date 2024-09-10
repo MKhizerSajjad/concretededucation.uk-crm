@@ -11,7 +11,16 @@ class AgentController extends Controller
 {
     public function index(Request $request)
     {
-        $data = User::with('lead')->orderBy('first_name')->where('user_Type', '!=', 1)->where('id', '!=', Auth::user()->id)->paginate(10);
+        $data = User::orderBy('first_name')
+            ->where('user_Type', '!=', 1)
+            ->where('id', '!=', Auth::user()->id);
+
+        if (Auth::user()->user_type == 2) {
+            $data = $data->where('user_id', Auth::user()->id);
+        } else {
+            $data = $data->with('lead');
+        }
+        $data = $data->paginate(10);
         return view('agent.index',compact('data'))->with('i', ($request->input('page', 1) - 1) * 10);
     }
 

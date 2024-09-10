@@ -47,7 +47,9 @@
                                                 <th>Name</th>
                                                 <th>Email</th>
                                                 <th>Phone</th>
-                                                <th>Lead</th>
+                                                @if (Auth::user()->user_type == 1)
+                                                    <th>Lead</th>
+                                                @endif
                                                 <th>Status</th>
                                                 <th class="text-center">Options</th>
                                             </tr>
@@ -59,7 +61,9 @@
                                                     <td>{{ $manager->first_name .' '. $manager->last_name }}</td>
                                                     <td>{{ $manager->email }}</td>
                                                     <td>{{ $manager->phone }}</td>
-                                                    <td>{{ $manager->lead->first_name ?? '' }}</td>
+                                                    @if (Auth::user()->user_type == 1)
+                                                        <td>{{ $manager->lead->first_name ?? '' }}</td>
+                                                    @endif
                                                     <td>{!! getGenStatus('general', $manager->status, 'badge') !!}</td>
                                                     <td class="text-center"> <a href="{{ route('agent.edit', $manager->id) }}"><i class="bx bx-pencil"></i></a></td>
                                                 </tr>
