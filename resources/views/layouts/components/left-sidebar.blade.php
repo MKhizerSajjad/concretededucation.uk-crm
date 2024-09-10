@@ -51,12 +51,14 @@
                         <span key="t-courses">Courses</span>
                     </a>
                 </li>
-                <li>
-                    <a href="{{ route('agent.index') }}" class="waves-effect">
-                        <i class="bx bx-user-circle"></i>
-                        <span key="t-courses">Agents</span>
-                    </a>
-                </li>
+                @if (in_array(auth()->user()->user_type , [1]))
+                    <li>
+                        <a href="{{ route('agent.index') }}" class="waves-effect">
+                            <i class="bx bx-user-circle"></i>
+                            <span key="t-courses">Agents</span>
+                        </a>
+                    </li>
+                @endif
                 <li>
                     <a href="javascript: void(0);" class="has-arrow waves-effect">
                         <i class="bx bx-book-open"></i>
