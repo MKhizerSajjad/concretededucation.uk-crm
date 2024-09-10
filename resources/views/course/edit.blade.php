@@ -45,7 +45,7 @@
                                     <div class="col-sm-6">
                                         <div class="mb-3">
                                             <label for="short_name">Short Name <span class="text text-danger"> *</span></label>
-                                            <input id="short_name" name="short_name" type="text" class="form-control @error('name') is-invalid @enderror" placeholder="Short Name" value="{{ old('name') }}">
+                                            <input id="short_name" name="short_name" type="text" class="form-control @error('short_name') is-invalid @enderror" placeholder="Short Name" value="{{ old('short_name', $course->short_name) }}">
                                             @error('short_name')
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong>{{ $message }}</strong>
@@ -56,7 +56,7 @@
                                     <div class="col-sm-6">
                                         <div class="mb-3">
                                             <label for="duration">Course Duration <span class="font-size-10">(In Year)</span> <span class="text text-danger"> *</span></label>
-                                            <input id="duration" name="duration" type="text" class="form-control @error('name') is-invalid @enderror" placeholder="Course Duration" value="{{ old('name') }}">
+                                            <input id="duration" name="duration" type="text" class="form-control @error('duration') is-invalid @enderror" placeholder="Course Duration" value="{{ old('duration', $course->years) }}">
                                             @error('duration')
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong>{{ $message }}</strong>
@@ -89,7 +89,7 @@
                                                     <option value="{{ $level->id }}" {{ old('course_level', $course->course_level_id) == $level->id ? 'selected' : '' }}>{{ $level->name }}</option>
                                                 @endforeach
                                             </select>
-                                            @error('status')
+                                            @error('course_level')
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong>{{ $message }}</strong>
                                                 </span>
@@ -105,7 +105,7 @@
                                                     <option value="{{ $dept->id }}" {{ old('department', $course->department_id) == $dept->id ? 'selected' : '' }}>{{ $dept->name }}</option>
                                                 @endforeach
                                             </select>
-                                            @error('status')
+                                            @error('department')
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong>{{ $message }}</strong>
                                                 </span>

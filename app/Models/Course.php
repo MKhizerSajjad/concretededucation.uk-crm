@@ -24,4 +24,15 @@ class Course extends Model
     {
         return $this->belongsToMany(Keyword::class);
     }
+
+
+    public function dept()
+    {
+        return $this->belongsTo(Department::class, 'department_id', 'id');
+    }
+
+    public function level()
+    {
+        return $this->belongsTo(CourseLevel::class, 'course_level_id', 'id');
+    }
 }

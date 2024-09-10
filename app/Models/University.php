@@ -11,6 +11,21 @@ class University extends Model
     use HasFactory;
     protected $guarded;
 
+    public function city()
+    {
+        return $this->belongsTo(Cities::class, 'city_id');
+    }
+
+    public function state()
+    {
+        return $this->belongsTo(States::class, 'state_id');
+    }
+
+    public function country()
+    {
+        return $this->belongsTo(Countries::class, 'country_id');
+    }
+
     public function courses()
     {
         return $this->hasMany(Course::class);

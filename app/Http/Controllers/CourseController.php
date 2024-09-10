@@ -30,7 +30,7 @@ class CourseController extends Controller
             'status' => 'required',
             'name' => 'required|max:200',
             'short_name' => 'required|max:200',
-            'duration' => 'required|max:200',
+            'duration' => 'required',
             'course_level' => 'required',
             'department' => 'required',
         ]);
@@ -77,7 +77,7 @@ class CourseController extends Controller
             'status' => 'required',
             'name' => 'required|max:200',
             'short_name' => 'required|max:200',
-            'duration' => 'required|max:200',
+            'duration' => 'required',
             'course_level' => 'required',
             'department' => 'required',
         ]);

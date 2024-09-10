@@ -12,4 +12,9 @@ class Cities extends Model
     public static $snakeAttributes = false;
 
     protected $guarded;
+
+    public function universities()
+    {
+        return $this->hasMany(University::class, 'city_id');
+    }
 }

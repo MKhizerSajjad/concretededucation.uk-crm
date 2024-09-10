@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
+use App\Models\CourseLevel;
+use App\Models\Department;
 use App\Models\University;
 use Illuminate\Http\Request;
 use App\Models\UniversityCourse;
@@ -11,8 +13,63 @@ class UniversityCourseController extends Controller
 {
     public function index(Request $request)
     {
+
+        $universities = University::where('status', 1)->get();
+        $depts = Department::where('status', 1)->get();
+        $courses = Course::where('status', 1)->get();
+        $levels = CourseLevel::where('status', 1)->get();
+        $query = University::whereHas('universityCourses')
+            ->select('id', 'name', 'short_name')
+            ->where('status', 1);
+
+        // Apply filters only if they are provided
+
+        // Filter by course ID if 'course' is provided
+        if ($request->filled('course')) {
+            $query->whereHas('universityCourses.course', function ($q) use ($request) {
+                $q->where('id', $request->input('course'));
+            });
+        }
+
+        // Filter by year range if both 'from' and 'to' are provided
+        if ($request->filled('from') && $request->filled('to')) {
+            $query->whereHas('universityCourses.course', function ($q) use ($request) {
+                $q->whereBetween('years', [(int)$request->input('from'), (int)$request->input('to')]);
+            });
+        }
+
+        // Filter by course level if 'level' is provided
+        if ($request->filled('level')) {
+            $query->whereHas('universityCourses.course', function ($q) use ($request) {
+                $q->where('course_level_id', $request->input('level'));
+            });
+        }
+
+        // Filter by department if 'dept' is provided
+        if ($request->filled('dept')) {
+            $query->whereHas('universityCourses.course', function ($q) use ($request) {
+                $q->where('department_id', $request->input('dept'));
+            });
+        }
+
+        // Filter by university ID if 'university' is provided
+        if ($request->filled('university')) {
+            $query->where('id', $request->input('university'));
+        }
+
+        // Apply sorting and pagination
+        $data = $query
+        ->with(['universityCourses', 'city', 'state', 'country'])
+        ->orderBy('name')->paginate(10);
+
+        return view('university_courses.index',compact('data', 'universities', 'depts', 'courses', 'levels'))
+            ->with('i', ($request->input('page', 1) - 1) * 10);
+    }
+
+    public function count(Request $request)
+    {
         $data = University::whereHas('universityCourses')->with('universityCourses')->select('id', 'name', 'short_name')->orderBy('name')->paginate(10);
-        return view('university_courses.index',compact('data'))
+        return view('university_courses.count',compact('data'))
             ->with('i', ($request->input('page', 1) - 1) * 10);
     }
 

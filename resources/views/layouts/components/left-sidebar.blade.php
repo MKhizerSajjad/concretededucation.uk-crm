@@ -63,8 +63,9 @@
                         <span key="t-avail-course">University Courses</span>
                     </a>
                     <ul class="sub-menu" aria-expanded="false">
-                        <li><a href="{{ route('university-courses.index') }}" key="t-universities">Universities</a></li>
+                        <li><a href="{{ route('university-courses.index') }}" key="t-filters">Filters   </a></li>
                         <li><a href="{{ route('university-courses.list') }}" key="t-courses">Courses</a></li>
+                        <li><a href="{{ route('university-courses.count') }}" key="t-universities">Universities</a></li>
                         {{-- <li><a href="{{ route('intake-course.index') }}" key="t-product-detail">Courses</a></li> --}}
                     </ul>
                 </li>

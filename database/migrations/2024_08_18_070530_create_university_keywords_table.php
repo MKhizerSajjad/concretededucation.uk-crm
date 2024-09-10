@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('university_keywords', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('keyword_id')->constrained()->onDelete('cascade')->indexed();
-            $table->foreignId('university_id')->constrained()->onDelete('cascade')->indexed();
+            $table->foreignId('keyword_id')->constrained('keywords')->onDelete('cascade')->indexed();
+            $table->foreignId('university_id')->constrained('universities')->onDelete('cascade')->indexed();
             $table->timestamps();
         });
     }

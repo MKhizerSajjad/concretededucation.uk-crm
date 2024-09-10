@@ -29,6 +29,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::prefix('university-courses')->group(function () {
         Route::get('/', [UniversityCourseController::class, 'index'])->name('university-courses.index');
+        Route::get('/count', [UniversityCourseController::class, 'count'])->name('university-courses.count');
         Route::get('list', [UniversityCourseController::class, 'list'])->name('university-courses.list');
         Route::get('create', [UniversityCourseController::class, 'create'])->name('university-courses.create');
         Route::post('store', [UniversityCourseController::class, 'store'])->name('university-courses.store');
