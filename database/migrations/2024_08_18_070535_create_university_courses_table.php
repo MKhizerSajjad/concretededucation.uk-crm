@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('university_courses', function (Blueprint $table) {
             $table->id();
             $table->tinyInteger('status')->default(2);
-            $table->foreignId('university_id')->constrained('universities')->onDelete('cascade')->indexed();
-            $table->foreignId('course_id')->constrained('courses')->onDelete('cascade')->indexed();
+            $table->foreignId('university_id')->constrained('universities')->onDelete('no action')->indexed();
+            $table->foreignId('course_id')->constrained('courses')->onDelete('no action')->indexed();
             $table->text('required_documents')->nullable();
             $table->text('available_shifts')->nullable();
             $table->text('requirements')->nullable();

@@ -98,14 +98,14 @@
                                     </div>
                                     <div class="col-sm-4">
                                         <div class="mb-3">
-                                            <label for="country_id">Country <span class="text text-danger"> *</span></label>
-                                            <select class="form-control select2 @error('country_id') is-invalid @enderror" id="country_id"  title="country_id" name="country_id">
+                                            <label for="country">Country <span class="text text-danger"> *</span></label>
+                                            <select class="form-control select2 @error('country') is-invalid @enderror" id="country"  title="country" name="country">
                                                 <option value="">Select Country </option>
                                                 @foreach ($countries as $country)
-                                                    <option value="{{ $country->id }}" @if(old('country_id', $university->country_id) == $country->id) selected @endif>{{ $country->name }}</option>
+                                                    <option value="{{ $country->id }}" @if(old('country', $university->country_id) == $country->id) selected @endif>{{ $country->name }}</option>
                                                 @endforeach
                                             </select>
-                                            @error('country_id')
+                                            @error('country')
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong>{{ $message }}</strong>
                                                 </span>
@@ -117,9 +117,9 @@
                                             <label for="state_id">State <span class="text text-danger"> *</span></label>
                                             <select class="form-control select2 @error('state_id') is-invalid @enderror" id="state_id" title="state_id" name="state_id">
                                                 <option value="">Select State </option>
-                                                @foreach ($states as $state)
+                                                {{-- @foreach ($states as $state)
                                                     <option value="{{ $state->id }}"  @if(old('state_id', $university->state_id) == $state->id) selected @endif>{{ $state->name }}</option>
-                                                @endforeach
+                                                @endforeach --}}
                                             </select>
                                             @error('state_id')
                                                 <span class="invalid-feedback" role="alert">
@@ -133,9 +133,9 @@
                                             <label for="city_id">City <span class="text text-danger"> *</span></label>
                                             <select class="form-control select2 @error('city_id') is-invalid @enderror" id="city_id" title="city" name="city_id">
                                                 <option value="">Select City </option>
-                                                @foreach ($cities as $city)
+                                                {{-- @foreach ($cities as $city)
                                                     <option value="{{ $city->id }}"  @if(old('city_id', $university->city_id) == $city->id) selected @endif>{{ $city->name }}</option>
-                                                @endforeach
+                                                @endforeach --}}
                                             </select>
                                             @error('city_id')
                                                 <span class="invalid-feedback" role="alert">

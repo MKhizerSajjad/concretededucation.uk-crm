@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->tinyInteger('status')->default(1);
             $table->string('name')->indexed();
-            $table->foreignId('department_id')->nullable()->constrained('departments')->onDelete('cascade')->indexed()->comment('to assign main depoartment');
+            $table->foreignId('department_id')->nullable()->constrained('departments')->onDelete('no action')->indexed()->comment('to assign main depoartment');
             $table->text('description')->nullable();
             $table->timestamps();
         });

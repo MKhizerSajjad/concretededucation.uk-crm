@@ -17,13 +17,13 @@ return new class extends Migration
             $table->string('name')->indexed();
             $table->string('short_name')->indexed();
             $table->string('established_year')->nullable();
-            $table->foreignId('university_id')->nullable()->constrained('universities')->onDelete('cascade')->indexed()->comment('to assign main campus');
+            $table->foreignId('university_id')->nullable()->constrained('universities')->onDelete('no action')->indexed()->comment('to assign main campus');
             $table->string('lattitude')->nullable();
             $table->string('longitude')->nullable();
             $table->text('description')->nullable();
-            $table->foreignId('city_id')->constrained()->onDelete('cascade');
-            $table->foreignId('state_id')->constrained()->onDelete('cascade');
-            $table->foreignId('country_id')->constrained()->onDelete('cascade');
+            $table->foreignId('city_id')->constrained('cities')->onDelete('no action');
+            $table->foreignId('state_id')->constrained('states')->onDelete('no action');
+            $table->foreignId('country_id')->constrained('countries')->onDelete('no action');
             $table->timestamps();
         });
     }

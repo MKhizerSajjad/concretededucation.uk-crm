@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('name')->indexed();
             // $table->unsignedInteger('state_id')->index();
-            $table->foreignId('state_id')->constrained('states')->onDelete('cascade');
+            $table->foreignId('state_id')->constrained('states')->onDelete('no action');
             $table->string('state_code');
-            $table->foreignId('country_id')->constrained('countries')->onDelete('cascade');
+            $table->foreignId('country_id')->constrained('countries')->onDelete('no action');
             // $table->unsignedInteger('country_id')->index();
             $table->string('country_code', 2);
             $table->decimal('latitude', 10, 8)->nullable();
@@ -27,8 +27,8 @@ return new class extends Migration
             $table->timestamps();
             // $table->index('state_id');
             // $table->index('country_id');
-            // $table->foreign('state_id')->references('id')->on('states')->onDelete('cascade');
-            // $table->foreign('country_id')->references('id')->on('countries')->onDelete('cascade');
+            // $table->foreign('state_id')->references('id')->on('states')->onDelete('no action');
+            // $table->foreign('country_id')->references('id')->on('countries')->onDelete('no action');
             // $table->timestamps();
 
         });

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->tinyInteger('status')->default(2);
             $table->string('name')->unique()->indexed(); // E.g., "Fall 2024", "Spring 2024"
-            $table->foreignId('university_id')->constrained('universities')->onDelete('cascade')->indexed();
+            $table->foreignId('university_id')->constrained('universities')->onDelete('no action')->indexed();
             $table->date('start_date');
             $table->date('end_date');
             $table->text('description')->nullable();

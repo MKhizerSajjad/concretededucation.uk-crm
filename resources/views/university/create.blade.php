@@ -107,14 +107,14 @@
                                     </div>
                                     <div class="col-sm-4">
                                         <div class="mb-3">
-                                            <label for="country_id">Country <span class="text text-danger"> *</span></label>
-                                            <select class="form-control select2 @error('country_id') is-invalid @enderror" id="country_id" title="country_id" name="country_id">
+                                            <label for="country">Country <span class="text text-danger"> *</span></label>
+                                            <select class="form-control select2 @error('country') is-invalid @enderror" id="country" title="country" name="country">
                                                 <option value="">Select Country </option>
                                                 @foreach ($countries as $country)
                                                     <option value="{{ $country->id }}">{{ $country->name }}</option>
                                                 @endforeach
                                             </select>
-                                            @error('country_id')
+                                            @error('country')
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong>{{ $message }}</strong>
                                                 </span>
@@ -123,14 +123,14 @@
                                     </div>
                                     <div class="col-sm-4">
                                         <div class="mb-3">
-                                            <label for="state_id">State <span class="text text-danger"> *</span></label>
-                                            <select class="form-control select2 @error('state_id') is-invalid @enderror" id="state_id" title="state" name="state_id">
+                                            <label for="state">State <span class="text text-danger"> *</span></label>
+                                            <select class="form-control select2 @error('state') is-invalid @enderror" id="state" title="state" name="state">
                                                 <option value="">Select State </option>
-                                                @foreach ($states as $state)
+                                                {{-- @foreach ($states as $state)
                                                     <option value="{{ $state->id }}">{{ $state->name }}</option>
-                                                @endforeach
+                                                @endforeach --}}
                                             </select>
-                                            @error('state_id')
+                                            @error('state')
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong>{{ $message }}</strong>
                                                 </span>
@@ -139,14 +139,14 @@
                                     </div>
                                     <div class="col-sm-4">
                                         <div class="mb-3">
-                                            <label for="city_id">City <span class="text text-danger"> *</span></label>
-                                            <select class="form-control select2 @error('city_id') is-invalid @enderror" id="city_id" title="city_id" name="city_id">
+                                            <label for="city">City <span class="text text-danger"> *</span></label>
+                                            <select class="form-control select2 @error('city') is-invalid @enderror" id="city" title="city" name="city">
                                                 <option value="">Select City </option>
-                                                @foreach ($cities as $city)
+                                                {{-- @foreach ($cities as $city)
                                                     <option value="{{ $city->id }}">{{ $city->name }}</option>
-                                                @endforeach
+                                                @endforeach --}}
                                             </select>
-                                            @error('city_id')
+                                            @error('city')
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong>{{ $message }}</strong>
                                                 </span>
@@ -182,3 +182,56 @@
         </div> <!-- container-fluid -->
     </div>
 @endsection
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+
+        $('.select2').select2();
+
+        // Handle country change
+        $('#country').on('change', function() {
+            var countryId = $(this).val();
+            if (countryId) {
+                $.ajax({
+                    url: "{{ url('get-states') }}",
+                    type: "GET",
+                    data: { country_id: countryId },
+                    success: function(data) {
+                        var stateDropdown = $('#state');
+                        stateDropdown.empty().append('<option value="">Select State</option>');
+                        $.each(data, function(key, state) {
+                            stateDropdown.append('<option value="' + state.id + '">' + state.name + '</option>');
+                        });
+                        // Clear city dropdown
+                        $('#city').empty().append('<option value="">Select City</option>');
+                    }
+                });
+            } else {
+                $('#state').empty().append('<option value="">Select State</option>');
+                $('#city').empty().append('<option value="">Select City</option>');
+            }
+        });
+
+        // Handle state change
+        $('#state').on('change', function() {
+            var stateId = $(this).val();
+            if (stateId) {
+                $.ajax({
+                    url: "{{ url('get-cities') }}",
+                    type: "GET",
+                    data: { state_id: stateId },
+                    success: function(data) {
+                        var cityDropdown = $('#city');
+                        cityDropdown.empty().append('<option value="">Select City</option>');
+                        $.each(data, function(key, city) {
+                            cityDropdown.append('<option value="' + city.id + '">' + city.name + '</option>');
+                        });
+                    }
+                });
+            } else {
+                $('#city').empty().append('<option value="">Select City</option>');
+            }
+        });
+    });
+</script>

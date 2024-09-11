@@ -122,11 +122,10 @@
                                                     </div> --}}
                                                     <div class="flex-grow-1 align-self-center" bis_skin_checked="1">
                                                         <div class="text-muted" bis_skin_checked="1">
-                                                            {{-- <p class="mb-2">Welcome to Skote Dashboard</p> --}}
+                                                            {{-- <p class="mb-2">Welcome to University</p> --}}
                                                             <h5 class="mb-1">{{ $university->name }}</h5>
                                                             <p class="mb-0">
-                                                                {{-- {{ $university->city->name }} , --}}
-                                                                {{-- {{ $university->state, $university->country }} --}}
+                                                                {{ $university->city->name .', '. $university->state->name .', '. $university->country->name }}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -136,45 +135,46 @@
                                     </div>
                                     <div class="pt-0 card-body" bis_skin_checked="1">
                                         <div class="row" bis_skin_checked="1">
-                                            {{-- ->where('course_id', request()->input('course')) --}}
                                             @foreach ($university->universityCourses as $course)
-                                                <div class="col-sm-12 mb-4 mt-2" bis_skin_checked="1">
-                                                    <div class="" bis_skin_checked="1">
-                                                        <h3 class="mb-1">{{ $course->course->name }} ({{ $course->course->short_name }})</h3>
-                                                        <div class="row" bis_skin_checked="1">
-                                                            <div class="col-4" bis_skin_checked="1">
-                                                                <div>
-                                                                    <span class="fa fa-calendar"></span> {{ $course->course->years }} year<br>
-                                                                    <span class="fa fa-clock"></span>
-                                                                        @foreach(explode(',', $course->available_shifts) as $key => $shift)
-                                                                            {{ getShifts('types', trim($shift)) }}
-                                                                            @if($key < count(explode(',', $course->available_shifts)) - 1)
-                                                                                ,
-                                                                            @endif
-                                                                        @endforeach
-                                                                    <br>
-                                                                    {{-- <span class="fa fa-map-marker"></span> Europe, London --}}
+                                                @if($course->course != null)
+                                                    <div class="col-sm-12 mb-4 mt-2" bis_skin_checked="1">
+                                                        <div class="" bis_skin_checked="1">
+                                                            <h3 class="mb-1">{{ $course->course->name }} ({{ $course->course->short_name }})</h3>
+                                                            <div class="row" bis_skin_checked="1">
+                                                                <div class="col-4" bis_skin_checked="1">
+                                                                    <div>
+                                                                        <span class="fa fa-calendar"></span> {{ $course->course->years }} year<br>
+                                                                        <span class="fa fa-clock"></span>
+                                                                            @foreach(explode(',', $course->available_shifts) as $key => $shift)
+                                                                                {{ getShifts('types', trim($shift)) }}
+                                                                                @if($key < count(explode(',', $course->available_shifts)) - 1)
+                                                                                    ,
+                                                                                @endif
+                                                                            @endforeach
+                                                                        <br>
+                                                                        {{-- <span class="fa fa-map-marker"></span> Europe, London --}}
+                                                                    </div>
+                                                                    {{-- <h5 class="font-size-15">125</h5>
+                                                                    <p class="text-muted mb-0">Projects</p> --}}
                                                                 </div>
-                                                                {{-- <h5 class="font-size-15">125</h5>
-                                                                <p class="text-muted mb-0">Projects</p> --}}
-                                                            </div>
-                                                            <div class="col-4" bis_skin_checked="1">
-                                                                <div>
-                                                                    <span class="fa fa-building"></span> {{ $course->course->dept->name }} <br>
-                                                                    <span class="fa fa-th-list"></span> {{ $course->course->level->name }} <br>
+                                                                <div class="col-4" bis_skin_checked="1">
+                                                                    <div>
+                                                                        <span class="fa fa-building"></span> {{ $course->course->dept->name }} <br>
+                                                                        <span class="fa fa-th-list"></span> {{ $course->course->level->name }} <br>
+                                                                    </div>
+                                                                    {{-- <h5 class="font-size-15">125</h5>
+                                                                    <p class="text-muted mb-0">Projects</p> --}}
                                                                 </div>
-                                                                {{-- <h5 class="font-size-15">125</h5>
-                                                                <p class="text-muted mb-0">Projects</p> --}}
-                                                            </div>
-                                                            <div class="col-4">
-                                                                <div class="mt-2 d-flex justify-content-end">
-                                                                    <a class="btn btn-primary btn-md" href="#">Apply Now<i class="mdi mdi-arrow-right ms-1"></i></a>
+                                                                <div class="col-4">
+                                                                    <div class="mt-2 d-flex justify-content-end">
+                                                                        <a class="btn btn-primary btn-md" href="#">Apply Now<i class="mdi mdi-arrow-right ms-1"></i></a>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                <hr>
+                                                    <hr>
+                                                @endif
                                             @endforeach
                                         </div>
                                     </div>

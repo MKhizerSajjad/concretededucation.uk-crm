@@ -2,64 +2,718 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Application;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
+use App\Models\Course;
+use App\Models\Countries;
+use App\Models\CourseLevel;
+use App\Models\Department;
+use App\Models\University;
+use App\Models\Application;
+use App\Models\UniversityCourse;
 
 class ApplicationController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $data = Application::with(['student', 'course'])->orderByDesc('application_number')->paginate(10);
+
+        return view('application.index',compact('data'))
+            ->with('i', ($request->input('page', 1) - 1) * 10);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        $data = json_decode('{}');
+        // $data->items = Item::where('status', 1)->orderBy('name')->get();
+        // $data->parts = Part::where('status', 1)->orderBy('name')->get();
+        // $data->services = Service::orderBy('name')->get(); // where('status', '!=', 3)->
+        // $data->priorities = Priority::where('status', 1)->orderBy('id')->get();
+        // $data->serviceLocations = SerivceLocation::where('status', 1)->orderBy('id')->get();
+        // $data->terms = Setting::where('type', 'term')->pluck('data')->first() ?? null;
+        $data->countries = Countries::select('id', 'name')->orderBy('name')->get();
+        return view('application.create', compact('data'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $serviceLocationID = $request->input('services_location');
+        $serviceLocationFields = SerivceLocation::where('id', $serviceLocationID)->value('fields');
+        $fieldsArray = json_decode($serviceLocationFields);
+
+        $additionalRules = [
+            'item' => 'required',
+            'manufacturer' => 'required',
+            'model' => 'required',
+            'year' => 'required',
+            'color' => 'required',
+            'additional_info' => 'nullable',
+            'problem_description' => 'nullable',
+            // 'description' => 'required',
+            'priority' => 'required',
+            'service.*' => 'required',
+            'parts.*' => 'required',
+            // 'files.*' => 'required|file|mimes:jpeg,png,pdf,docx|max:2048',
+        ];
+
+        // Merge dynamic field validation with additional rules
+        $rules = [];
+        foreach ($fieldsArray as $field) {
+            $fieldName = $serviceLocationID . '-' . $field->name;
+            $rules[$fieldName] = 'required';
+        }
+        $rules = array_merge($additionalRules, $rules);
+
+        // Validate the request with merged rules
+        $this->validate($request, $rules);
+
+        $phone = $request->input($serviceLocationID.'-'.'phone');
+        $customer = [];
+        foreach ($fieldsArray as $field) {
+            $customer[$field->name] = $request->input($serviceLocationID.'-'.$field->name) ?? '';
+        }
+
+        $customerAdd = Customer::updateOrCreate(
+            ['phone' => $phone], //
+            $customer
+        );
+
+        $terms = [];
+        if ($request->has('terms')) {
+            foreach ($request->input('terms') as $key => $termData) {
+                $terms[] = [
+                    'title' => str_replace('_', ' ', $key),
+                    'name' => $key,
+                    'link' => $termData['link'] ?? null,
+                    'is_check' => $termData['status'] ?? '0'
+                ];
+            }
+        }
+        $confirmation = json_encode($terms);
+
+        $invoce = $this->generateInvoiceCode();
+        $data = [
+            'code' => $invoce,
+            'date_opened' => now(),
+            'customer_id' => $customerAdd->id ?? null,
+            'user_id' => auth()->check() ? auth()->id() : null,
+            'details' => $confirmation,
+            'item_id' => $request->input('item'),
+            'manufacturer' => $request->input('manufacturer'),
+            'model' => $request->input('model'),
+            'year' => $request->input('year'),
+            'color' => $request->input('color'),
+            'additional_info' => $request->input('additional_info'),
+            'problem_description' => $request->input('problem_description'),
+            'priority_id' => $request->input('priority'),
+            'inspection_diagnose' => $request->input('inspection'),
+            'services_location' => $request->input('services_location'),
+            'service_desired_total' => $request->input('service_desired_total') ?? null,
+        ];
+
+        $task = Task::create($data);
+        $isCustomerChoice = (!auth()->check() || Auth::user()->user_type == 4) ? 1 : 2;
+
+        if ($request->hasFile('files')) {
+
+            $index = 0; // Initialize the index variable
+            foreach ($request->file('files') as $file) {
+                try {
+
+                    // $path = $file->store('task/images', 'public'); // 'images' is a folder inside 'public' disk
+                    // $url = asset('storage/' . $path);
+
+                    $filenameWithExt = $file->getClientOriginalName();
+                    $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+                    $extension = $file->getClientOriginalExtension();
+                    $fileNameToStore = time() . '_' . $index . '_' . $task->id . '.' . $extension;
+                    $file->move(base_path('/public/task/media/'), $fileNameToStore);
+                    // $path = $file->store('task/media', $fileNameToStore); // 'images' is a folder inside 'public' disk
+                    // $url = asset('storage/' . $path);
+                    // $file->storeAs('public/media', $fileNameToStore);
+
+                    $data = [
+                        'task_id' => $task->id,
+                        'type' => getFileTypeFromExtension($extension),
+                        'media' => $fileNameToStore,
+                        'customer_choice' => $isCustomerChoice,
+                        'leave_receive' => 1,
+                    ];
+                    $media = TaskMedia::create($data);
+
+                    logger('File saved successfully: ' . $fileNameToStore);
+                    $index++;
+
+                } catch (\Exception $e) {
+                    logger('Error saving file: ' . $e->getMessage());
+
+                }
+            }
+        }
+
+        if(isset($request->services)) {
+            foreach ($request->input('services') as $key => $service_id) {
+
+                $dbService = Service::where('id', $service_id)->select('id', 'price', 'tax')->first();
+
+                $qty = $service['qty'] ?? 1;
+                $price = $dbService->price ?? null;
+                $tax = ($dbService->add_tax == 1 ? getTax() : 0) ?? null;
+                $serviceTaxAmount = $tax * $price / 100;
+                $serviceWithTax = $price + $serviceTaxAmount;
+                $servicePrice = $serviceWithTax * $qty;
+
+                TaskService::create([
+                    'task_id' => $task->id,
+                    'service_id' => $service_id,
+                    'customer_choice' => $isCustomerChoice,
+                    'qty' => $qty,
+                    'unit_price' => $price,
+                    'tax_perc' => $tax,
+                ]);
+            }
+        }
+
+        // Get extra-parts from request and process them
+        $extraParts = $request->input('extra-parts', '');
+        $extraPartsArray = array_map('trim', explode(',', $extraParts));
+        $extraPartsArray = array_filter($extraPartsArray); // Remove empty values
+
+        foreach ($extraPartsArray as $field) {
+            $added = Part::updateOrCreate(
+                ['name' => $field],
+                ['status' => 2],
+            );
+
+            $parts[] = $added->id;
+        }
+
+        $mergedParts = array_merge($parts, $request->input('parts'));
+        logger('mergedParts : ' . json_encode($mergedParts));
+        $uniqueMergedParts = array_unique($mergedParts);
+
+        logger('uniqueMergedParts : ' . json_encode($uniqueMergedParts));
+
+        if(isset($uniqueMergedParts)) {
+            foreach ($uniqueMergedParts as $part_id) {
+                TaskLeavePart::create([
+                    'task_id' => $task->id,
+                    'part_id' => $part_id,
+                ]);
+            }
+        }
+
+        if(auth()->check() && Auth::user()->user_type != 4) {
+            return redirect()->route('case.index')->with('success','Record created successfully');
+        } else {
+            return redirect()->route('bookingStatusSearch', ['case_number' => $invoce, 'phone' => $phone])->with('success','Your booking has been created successfully');
+        }
+
+
+
+
+
+
+        // ## General info
+        // $job                      = new Job;
+        // $job->date_opened         = Carbon::now();
+        // $job->customer_id         = Auth::check() ? auth()->user()->id : null;
+        // // $job->technician_id       = 0;//
+        // // $job->company_id          = 0;//
+        // $job->details             = 0;//
+        // $job->item_id             = $request->item;
+        // $job->manufacturer        = $request->manufacturer;
+        // $job->model               = $request->model;
+        // $job->year                = $request->year;
+        // $job->color               = $request->color;
+        // $job->additional_info     = $request->additional_info;
+        // $job->problem_description = $request->description;
+        // $job->priority_id         = $request->priority;
+        // $job->save();
+
+        // ## Services
+        // foreach($request->service as $service_id){
+        //     $job_service = new JobService;
+        //     $job_service->job_id     = $job->id;
+        //     $job_service->service_id = $service_id;
+        //     $job_service->save();
+        // }
+
+        // ## Parts
+        // foreach($request->parts as $part_id){
+        //     $job_part             = new JobLeavePart;
+        //     $job_part->job_id     = $job->id;
+        //     $job_part->part_id    = $part_id;
+        //     $job_part->save();
+        // }
+
+        // ## Media
+        // if ($request->hasFile('files')) {
+
+        //     $index = 0; // Initialize the index variable
+        //     foreach ($request->file('files') as $file) {
+        //         try {
+        //             $filenameWithExt = $file->getClientOriginalName();
+        //             $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+        //             $extension = $file->getClientOriginalExtension();
+        //             $fileNameToStore = time() . '_' . $index . '.' . $extension;
+
+        //             $file->storeAs('public/media', $fileNameToStore);
+
+        //             $job_media = new JobMedia;
+        //             $job_media->job_id = $job->id;
+        //             $job_media->media = $fileNameToStore;
+        //             $job_media->save();
+
+        //             logger('File saved successfully: ' . $fileNameToStore);
+        //             $index++;
+
+        //         } catch (\Exception $e) {
+        //             logger('Error saving file: ' . $e->getMessage());
+
+        //         }
+        //     }
+        // } else {
+        //     logger('No files found in the request.');
+        // }
+
+        // return 'DATA SAVED SUCCESSFULLY';
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Application $application)
+    public function show(Task $task)
+    {
+        $data['task'] = $task;
+        return view('case.show', compact('data'));
+    }
+
+    public function edit(Task $task)
+    {
+        $data = json_decode('{}');
+        $data->task = Task::where('id', $task->id)->with('customer', 'media', 'taskServices', 'taskLeaveParts', 'taskProducts.taskItemProducts')->first();
+        $data->confirmations = isset($task->details) ? json_decode($task->details, true) : null;
+        $data->items = Item::where('status', 1)->orderBy('name')->get();
+        $data->parts = Part::orderBy('name')->get();
+        $data->services = Service::orderBy('name')->get(); // where('status', 1)->
+        $data->priorities = Priority::where('status', 1)->orderBy('id')->get();
+        $data->products = Product::where('status', 1)->orderBy('name')->get();
+        $data->serviceLocations = SerivceLocation::where('status', 1)->orderBy('id')->get();
+        $data->technicians = User::where([['status', 1],['user_type', 3]])->orderBy('first_name')->get();
+        // $data->taskProduct = TaskProduct::with('taskChildProducts')->where('task_id', $task->id)->where('task_products_id', null)->get();
+
+        return view('case.edit',compact('data'));
+    }
+
+    public function update(Request $request, Task $task)
+    {
+        $serviceLocationID = $request->input('services_location');
+        $serviceLocationFields = SerivceLocation::where('id', $serviceLocationID)->value('fields');
+        $fieldsArray = json_decode($serviceLocationFields);
+
+        $additionalRules = [
+            'item' => 'required',
+            'manufacturer' => 'required',
+            'model' => 'required',
+            'year' => 'required',
+            'color' => 'required',
+            'additional_info' => 'nullable',
+            'problem_description' => 'nullable',
+            // 'description' => 'required',
+            'priority' => 'required',
+            'service.*' => 'required',
+            'parts.*' => 'required',
+            // 'files.*' => 'required|file|mimes:jpeg,png,pdf,docx|max:2048',
+        ];
+
+        // Merge dynamic field validation with additional rules
+        $rules = [];
+        foreach ($fieldsArray as $field) {
+            $fieldName = $serviceLocationID . '-' . $field->name;
+            $rules[$fieldName] = 'required';
+        }
+        $rules = array_merge($additionalRules, $rules);
+
+        // Validate the request with merged rules
+        $this->validate($request, $rules);
+
+        $phone = $request->input($serviceLocationID.'-phone');
+        $customer = [];
+        foreach ($fieldsArray as $field) {
+            if($field->name == 'phone') {
+                // continue;
+            }
+            $customer[$field->name] = $request->input($serviceLocationID.'-'.$field->name) ?? '';
+        }
+        $customerAdd = Customer::updateOrCreate(
+            ['phone' => $phone],
+            $customer
+        );
+
+        // Terms & Condition / Confirmations
+        $terms = [];
+        if ($request->has('terms')) {
+            foreach ($request->input('terms') as $key => $termData) {
+                $terms[] = [
+                    'title' => str_replace('_', ' ', $key),
+                    'name' => $key,
+                    'link' => $termData['link'] ?? null,
+                    'is_check' => $termData['status'] ?? '0'
+                ];
+            }
+        }
+        $confirmation = json_encode($terms);
+
+        $data = [
+            'customer_id' => $customerAdd->id ?? null,
+            'details' => $confirmation,
+            'item_id' => $request->input('item'),
+            'technician_id' => $request->input('technician_id'),
+            'manufacturer' => $request->input('manufacturer'),
+            'model' => $request->input('model'),
+            'year' => $request->input('year'),
+            'color' => $request->input('color'),
+            'additional_info' => $request->input('additional_info'),
+            'problem_description' => $request->input('problem_description'),
+            'priority_id' => $request->input('priority'),
+            'inspection_diagnose' => $request->input('inspection'),
+            'services_location' => $request->input('services_location'),
+        ];
+
+        $taskId = $task->id;
+        $task = Task::updateOrCreate(['id' => $taskId], $data);
+
+        $taxPercentage = getTax();
+
+        // Merge Product Scenario
+        $row_count = $request->input("row_count");
+        $product = [];
+        $totalProductAmount = 0;
+        for ($count=1; $count <= $row_count; $count++) {
+            if (($request->input("merge_name_$count") == null) && count($request->input("product_$count")) == 1) {
+                $mergeProduct = $request->input("name_$count")[0];
+            } else {
+                $mergeProduct = $request->input("merge_name_$count");
+            }
+            if(($mergeProduct == null || $mergeProduct == '') && count($request->input("product_$count")) == 0) {
+                continue;
+            }
+            $productArray = $request->input("product_$count");
+            $priceArray = $request->input("price_$count");
+            $qtyArray = $request->input("qty_$count");
+            $totalItemsAmount = 0;
+            $totalItemsAmountExTax = 0;
+            foreach((array)$productArray as $key => $value) {
+                if($value == null || $value == ''){
+                    continue;
+                }
+
+                $productTaxAmount = $taxPercentage * $priceArray[$key] / 100;
+                $productWithTax = $priceArray[$key] + $productTaxAmount;
+                $totalItemPrice = $productWithTax * $qtyArray[$key];
+                $totalItemsAmount += $totalItemPrice;
+                $totalItemsAmountExTax += $priceArray[$key] * $qtyArray[$key];
+
+                $product[$mergeProduct]['child'][] = [
+                    'id' => $value,
+                    'qty' => $qtyArray[$key],
+                    'price' => $priceArray[$key],
+                    'total' =>  $totalItemPrice,
+                    'tax' =>  $taxPercentage
+                ];
+            }
+            $product[$mergeProduct]['name'] = $mergeProduct;
+            $product[$mergeProduct]['qty'] = 1;
+            $product[$mergeProduct]['total'] = $totalItemsAmountExTax;
+            $totalProductAmount += $totalItemsAmount;
+        }
+
+        // Parent Product
+        TaskItemProduct::where('task_id', $taskId)->delete();
+        TaskProduct::where('task_id', $taskId)->delete();
+        foreach ($product as $key => $productData) {
+            $data = [
+                'task_id' => $taskId,
+                'name' => $productData['name'],
+                'total' => $productData['total'],
+            ];
+            $parentProduct = TaskProduct::updateOrCreate(
+                [
+                    'task_id' => $taskId,
+                    'name' => $productData['name']
+                ],
+                $data
+            );
+
+            // Child if available
+            if (isset($productData['child'])) {
+                foreach ($productData['child'] as $childData) {
+                    $productInfo = Product::whereId($childData['id'])->first();
+                    if(!isset($productInfo->id)){
+                        continue;
+                    }
+                    $data = [
+                        'product_id' => $childData['id'],
+                        'qty' => $childData['qty'],
+                        'unit_price' => $childData['price'],
+                        'total' => $childData['total'],
+                        'tax_perc' => $taxPercentage,
+                    ];
+
+                    TaskItemProduct::updateOrCreate(
+                        [
+                            'task_id' => $taskId,
+                            'product_id' => $childData['id'],
+                            'task_products_id' => $parentProduct->id
+                        ],
+                        $data
+                    );
+                }
+            }
+        }
+
+        $isCustomerChoice = (!auth()->check() || Auth::user()->user_type == 4) ? 1 : 2;
+        if ($request->hasFile('files')) {
+
+            $index = 0; // Initialize the index variable
+            foreach ($request->file('files') as $file) {
+                try {
+
+                    // $path = $file->store('task/images', 'public'); // 'images' is a folder inside 'public' disk
+                    // $url = asset('storage/' . $path);
+
+                    $filenameWithExt = $file->getClientOriginalName();
+                    $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+                    $extension = $file->getClientOriginalExtension();
+                    $fileNameToStore = time() . '_' . $index . '_' . $task->id . '.' . $extension;
+                    $file->move(base_path('/public/task/media/'), $fileNameToStore);
+                    // $path = $file->store('task/media', $fileNameToStore); // 'images' is a folder inside 'public' disk
+                    // $url = asset('storage/' . $path);
+                    // $file->storeAs('public/media', $fileNameToStore);
+
+                    $data = [
+                        'task_id' => $task->id,
+                        'type' => getFileTypeFromExtension($extension),
+                        'media' => $fileNameToStore,
+                        'customer_choice' => $isCustomerChoice,
+                    ];
+                    $media = TaskMedia::create($data);
+
+                    logger('File saved successfully: ' . $fileNameToStore);
+                    $index++;
+
+                } catch (\Exception $e) {
+                    logger('Error saving file: ' . $e->getMessage());
+
+                }
+            }
+        }
+
+        // Services
+        $totalServiceAmount = 0;
+        if ($request->input('services')) {
+            foreach ($request->input('services') as $service) {
+                $dbService = Service::where('id', $service)->select('id', 'price', 'tax')->first();
+
+                $qty = $service['qty'] ?? 1;
+                $price = $dbService->price ?? null;
+                $tax = ($dbService->add_tax == 1 ? getTax() : 0) ?? null;
+                $serviceTaxAmount = $tax * $price / 100;
+                $serviceWithTax = $price + $serviceTaxAmount;
+                $servicePrice = $serviceWithTax * $qty;
+                $totalServiceAmount += $servicePrice;
+                $data = [
+                    'service_id' => $service,
+                    'qty' => $qty,
+                    'unit_price' => $price,
+                    'tax_perc' => $tax
+                ];
+
+                TaskService::updateOrCreate(
+                    [
+                        'task_id' => $taskId,
+                        'service_id' => $service,
+                    ],
+                    $data
+                );
+            }
+        }
+
+        $totalAmount = 0;
+        $totalAmount = $totalServiceAmount + $totalProductAmount;
+
+        $task->update(['total' => $totalAmount]);
+
+        $task->leaveParts()->sync($request->input('parts', []));
+        // $task->services()->sync($request->input('services', []));
+        // $task->products()->sync($request->input('products', []));
+
+        // if(isset($request->services)) {
+        //     foreach ($request->input('services') as $service_id) {
+        //         TaskService::create([
+        //             'task_id' => $task->id,
+        //             'service_id' => $service_id,
+        //         ]);
+        //     }
+        // }
+
+        // if(isset($request->parts)) {
+        //     foreach ($request->input('parts') as $part_id) {
+        //         TaskLeavePart::create([
+        //             'task_id' => $task->id,
+        //             'part_id' => $part_id,
+        //         ]);
+        //     }
+        // }
+
+        return redirect()->route('case.index')->with('success','Record update successfully');
+    }
+
+    public function destroy(Task $task)
     {
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Application $application)
+    public function destroyMedia(Request $request, $id=0)
     {
-        //
+        TaskMedia::where('id', $id)->delete();
+        return response()->json(['message' => $id]);
+
+        // $task->media()->delete();
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Application $application)
+    public function invoice(Task $task)
     {
-        //
+        return view('case.invoice', compact('task'));
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Application $application)
+    public function status()
     {
-        //
+        return view('case.status');
+    }
+
+    public function statusSearch(Request $request)
+    {
+        $request->validate([
+            'case_number' => 'required|string',
+            'phone' => 'required|string',
+        ]);
+
+        $caseNumber = $request->input('case_number');
+        $phone = $request->input('phone');
+
+        $task = Task::where('code', $caseNumber)->with('customer', 'media', 'taskServices', 'taskLeaveParts', 'taskProducts')
+                    ->whereHas('customer', function ($query) use ($phone) {
+                        $query->where('phone', $phone);
+                    })->first();
+
+        $data = $task;
+        if(isset($task)) {
+            $data = json_decode('{}');
+            $data->task = $task;
+            $data->confirmations = isset($task->details) ? json_decode($task->details, true) : null;
+            $data->items = Item::where('status', 1)->orderBy('name')->get();
+            $data->parts = Part::where('status', 1)->orderBy('name')->get();
+            $data->services = Service::orderBy('name')->get(); // where('status', 1)->
+            $data->priorities = Priority::where('status', 1)->orderBy('id')->get();
+            $data->products = Product::where('status', 1)->orderBy('name')->get();
+            $data->serviceLocations = SerivceLocation::where('status', 1)->orderBy('id')->get();
+            $data->technicians = User::where([['status', 1],['user_type', 3]])->orderBy('first_name')->get();
+        }
+
+        return view('case.status',compact('data'));
+    }
+
+    public function takeBack()
+    {
+        return view('case.take_back');
+    }
+
+    public function takeBackDetails(Request $request)
+    {
+        $request->validate([
+            'case_number' => 'required|string',
+            'phone' => 'required|string',
+        ]);
+
+        $caseNumber = $request->input('case_number');
+        $phone = $request->input('phone');
+
+        $task = Task::where('code', $caseNumber)->with('customer', 'media', 'taskServices', 'taskLeaveParts', 'taskProducts')
+                    ->whereHas('customer', function ($query) use ($phone) {
+                        $query->where('phone', $phone);
+                    })->first();
+
+        $data = $task;
+        if(isset($task)) {
+            $data = json_decode('{}');
+            $data->task = $task;
+            $data->confirmations = isset($task->details) ? json_decode($task->details, true) : null;
+            $data->items = Item::where('status', 1)->orderBy('name')->get();
+            $data->parts = Part::where('status', 1)->orderBy('name')->get();
+            $data->services = Service::orderBy('name')->get(); // where('status', 1)->
+            $data->priorities = Priority::where('status', 1)->orderBy('id')->get();
+            $data->products = Product::where('status', 1)->orderBy('name')->get();
+            $data->serviceLocations = SerivceLocation::where('status', 1)->orderBy('id')->get();
+            $data->technicians = User::where([['status', 1],['user_type', 3]])->orderBy('first_name')->get();
+            $data->pickupPoints = PickupPoint::where('status', 1)->get();
+        }
+
+        return view('case.take_back',compact('data'));
+    }
+
+    public function saveTakeBack(Request $request, Task $task)
+    {
+        $data = [
+            'pickup_point_id' => $request->input('pickup_ponint_id'),
+            'is_servised' => $request->input('is_servised'),
+            'is_satisfied' => $request->input('is_satisfied'),
+        ];
+
+        $taskId = $task->id;
+        $task = Task::updateOrCreate(['id' => $taskId], $data);
+
+        $isCustomerChoice = (!auth()->check() || Auth::user()->user_type == 4) ? 1 : 2;
+        if ($request->hasFile('files')) {
+
+            $index = 0; // Initialize the index variable
+            foreach ($request->file('files') as $file) {
+                try {
+
+                    // $path = $file->store('task/images', 'public'); // 'images' is a folder inside 'public' disk
+                    // $url = asset('storage/' . $path);
+
+                    $filenameWithExt = $file->getClientOriginalName();
+                    $filename = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+                    $extension = $file->getClientOriginalExtension();
+                    $fileNameToStore = time() . '_' . $index . '_' . $task->id . '.' . $extension;
+                    $file->move(base_path('/public/task/media/'), $fileNameToStore);
+                    // $path = $file->store('task/media', $fileNameToStore); // 'images' is a folder inside 'public' disk
+                    // $url = asset('storage/' . $path);
+                    // $file->storeAs('public/media', $fileNameToStore);
+
+                    $data = [
+                        'task_id' => $task->id,
+                        'type' => getFileTypeFromExtension($extension),
+                        'media' => $fileNameToStore,
+                        'customer_choice' => $isCustomerChoice,
+                        'leave_receive' => 2,
+                    ];
+                    $media = TaskMedia::create($data);
+
+                    logger('File saved successfully: ' . $fileNameToStore);
+                    $index++;
+
+                } catch (\Exception $e) {
+                    logger('Error saving file: ' . $e->getMessage());
+
+                }
+            }
+        }
+    }
+
+    public function generateInvoiceCode() {
+        $code = Carbon::now()->format('Ymd');
+        $todaysCount = Task::where('code', 'LIKE', $code.'%')->count();
+        // Increment the max code number by 1, if null set it to 1
+        return $code. str_pad(++$todaysCount, 5, '0', STR_PAD_LEFT);
     }
 }

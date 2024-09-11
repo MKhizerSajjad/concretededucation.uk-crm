@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('application_statuses', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('application_id')->constrained('applications')->onDelete('cascade');
+            $table->tinyInteger('status');
+            $table->date('date');
+            $table->text('detail')->nullable();
             $table->timestamps();
         });
     }

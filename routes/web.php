@@ -6,7 +6,9 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\IntakeController;
+use App\Http\Controllers\DependentController;
 use App\Http\Controllers\UniversityController;
+use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\IntakeCourseController;
 use App\Http\Controllers\UniversityCourseController;
 
@@ -21,10 +23,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard');
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
+
+    Route::get('get-states', [DependentController::class, 'getStates']);
+    Route::get('get-cities', [DependentController::class, 'getCities']);
+
     Route::resource('university', UniversityController::class)->names('university');
     Route::resource('course', CourseController::class)->names('course')->middleware('accessLevel:1');
     Route::resource('intake', IntakeController::class)->names('intake');
     Route::resource('agent', AgentController::class)->names('agent')->middleware('accessLevel:1,2');
+    Route::resource('application', ApplicationController::class)->names('application')->middleware('accessLevel:1,2,3');
     // Route::resource('university-courses', UniversityCourseController::class)->names('university-courses');
 
     Route::prefix('university-courses')->group(function () {

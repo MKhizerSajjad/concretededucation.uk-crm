@@ -23,10 +23,10 @@ class UniversityController extends Controller
     public function create()
     {
         $universities = University::orderBy('name')->where('status', 1)->whereNull('university_id')->get();
-        $countries = Countries::orderBy('name')->limit(20)->get();
-        $states = States::orderBy('name')->limit(20)->get();
-        $cities = Cities::orderBy('name')->limit(20)->get();
-        return view('university.create', compact('universities', 'countries', 'states', 'cities'));
+        $countries = Countries::orderBy('name')->get();
+        // $states = States::orderBy('name')->get();
+        // $cities = Cities::orderBy('name')->get();
+        return view('university.create', compact('universities', 'countries'));
     }
 
     public function store(Request $request)
@@ -36,9 +36,9 @@ class UniversityController extends Controller
             'name' => 'required|max:200',
             'short_name' => 'required|max:200',
             'established_year' => 'required',
-            'city_id' => 'required',
-            'state_id' => 'required',
-            'country_id' => 'required',
+            'city' => 'required',
+            'state' => 'required',
+            'country' => 'required',
         ]);
 
         $data = [
@@ -49,9 +49,9 @@ class UniversityController extends Controller
             'university_id' => $request->main_campus,
             'lattitude' => $request->lattitude ?? null,
             'longitude' => $request->longitude ?? null,
-            'city_id' => $request->city_id,
-            'state_id' => $request->state_id,
-            'country_id' => $request->country_id,
+            'city_id' => $request->city,
+            'state_id' => $request->state,
+            'country_id' => $request->country,
             'description' => $request->description,
         ];
 

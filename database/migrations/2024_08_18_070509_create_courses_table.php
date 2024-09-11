@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('name')->indexed();
             $table->string('short_name')->indexed();
             $table->integer('years')->nullable();
-            $table->foreignId('course_level_id')->constrained('course_levels')->onDelete('cascade')->indexed();
-            $table->foreignId('department_id')->constrained('departments')->onDelete('cascade')->indexed();
+            $table->foreignId('course_level_id')->constrained('course_levels')->onDelete('no action')->indexed();
+            $table->foreignId('department_id')->constrained('departments')->onDelete('no action')->indexed();
             $table->text('description')->nullable();
             $table->timestamps();
         });

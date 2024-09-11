@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             CitiesTableChunkFourSeeder::class,
             CitiesTableChunkFiveSeeder::class,
             UserSeeder::class,
+            UserSeeder::class,
         ]);
     }
 }

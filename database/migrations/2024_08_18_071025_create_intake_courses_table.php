@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('intake_courses', function (Blueprint $table) {
             $table->id();
             $table->tinyInteger('status')->default(2);
-            $table->foreignId('intake_id')->constrained('intakes')->onDelete('cascade')->indexed();
-            $table->foreignId('course_id')->constrained('courses')->onDelete('cascade')->indexed();
+            $table->foreignId('intake_id')->constrained('intakes')->onDelete('no action')->indexed();
+            $table->foreignId('course_id')->constrained('courses')->onDelete('no action')->indexed();
             $table->date('start_date');
             $table->date('end_date');
             $table->text('required_documents')->nullable();

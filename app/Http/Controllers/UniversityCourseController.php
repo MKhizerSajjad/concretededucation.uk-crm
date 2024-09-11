@@ -18,49 +18,55 @@ class UniversityCourseController extends Controller
         $depts = Department::where('status', 1)->get();
         $courses = Course::where('status', 1)->get();
         $levels = CourseLevel::where('status', 1)->get();
-        $query = University::whereHas('universityCourses')
-            ->select('id', 'name', 'short_name')
-            ->where('status', 1);
 
-        // Apply filters only if they are provided
+        $query = University::with([
+            'city',
+            'state',
+            'country',
+            'universityCourses' => function ($q) use ($request) {
+                if ($request->filled('course')) {
+                    $q->where('course_id', (int)$request->input('course'));
+                }
+            },
+            'universityCourses.course' => function ($q1) use ($request) {
+                if ($request->filled('from') && $request->filled('to')) {
+                    $q1->whereBetween('years', [(int)$request->input('from'), (int)$request->input('to')]);
+                }
+                if ($request->filled('level')) {
+                    $q1->where('course_level_id', $request->input('level'));
+                }
+                if ($request->filled('dept')) {
+                    $q1->where('department_id', $request->input('dept'));
+                }
+            }
+        ])
+        ->select('id', 'name', 'short_name', 'city_id', 'state_id', 'country_id')
+        ->where('status', 1);
 
-        // Filter by course ID if 'course' is provided
-        if ($request->filled('course')) {
-            $query->whereHas('universityCourses.course', function ($q) use ($request) {
-                $q->where('id', $request->input('course'));
-            });
-        }
-
-        // Filter by year range if both 'from' and 'to' are provided
-        if ($request->filled('from') && $request->filled('to')) {
-            $query->whereHas('universityCourses.course', function ($q) use ($request) {
-                $q->whereBetween('years', [(int)$request->input('from'), (int)$request->input('to')]);
-            });
-        }
-
-        // Filter by course level if 'level' is provided
-        if ($request->filled('level')) {
-            $query->whereHas('universityCourses.course', function ($q) use ($request) {
-                $q->where('course_level_id', $request->input('level'));
-            });
-        }
-
-        // Filter by department if 'dept' is provided
-        if ($request->filled('dept')) {
-            $query->whereHas('universityCourses.course', function ($q) use ($request) {
-                $q->where('department_id', $request->input('dept'));
-            });
-        }
-
-        // Filter by university ID if 'university' is provided
+        // Apply university filter if provided
         if ($request->filled('university')) {
             $query->where('id', $request->input('university'));
         }
 
-        // Apply sorting and pagination
-        $data = $query
-        ->with(['universityCourses', 'city', 'state', 'country'])
-        ->orderBy('name')->paginate(10);
+        // Ensure that only universities with at least one related course are included
+        $query->whereHas('universityCourses', function ($q) use ($request) {
+            if ($request->filled('course')) {
+                $q->where('course_id', (int)$request->input('course'));
+            }
+            $q->whereHas('course', function ($q2) use ($request) {
+                if ($request->filled('from') && $request->filled('to')) {
+                    $q2->whereBetween('years', [(int)$request->input('from'), (int)$request->input('to')]);
+                }
+                if ($request->filled('level')) {
+                    $q2->where('course_level_id', $request->input('level'));
+                }
+                if ($request->filled('dept')) {
+                    $q2->where('department_id', $request->input('dept'));
+                }
+            });
+        });
+
+        $data = $query->orderBy('name')->paginate(10);
 
         return view('university_courses.index',compact('data', 'universities', 'depts', 'courses', 'levels'))
             ->with('i', ($request->input('page', 1) - 1) * 10);
